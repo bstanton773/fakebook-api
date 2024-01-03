@@ -4,8 +4,6 @@ from app import app, db
 from app.models import Post, User
 from fake_data import post_data
 
-users = []
-
 @app.route('/')
 def index():
     return 'Hello World'
@@ -48,16 +46,8 @@ def create_post():
     body = data.get('body')
 
     # Create a new post
-    new_post = {
-        "id": len(post_data) + 1,
-        "title": title,
-        "body": body,
-        "userId": 1,
-        "dateCreated": datetime.utcnow(),
-        "likes": 0,
-    }
-    post_data.append(new_post)
-    return new_post, 201
+    new_post = Post(title=title, body=body, user_id=1)
+    return new_post.to_dict(), 201
 
 # Create new user
 @app.route('/users', methods=['POST'])
