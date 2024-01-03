@@ -34,6 +34,15 @@ class User(db.Model):
     def check_password(self, password_guess):
         return check_password_hash(self.password, password_guess)
 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'firstName': self.first_name,
+            'lastName': self.last_name,
+            'email': self.email,
+            'username': self.username,
+        }
+
 
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -56,3 +65,13 @@ class Post(db.Model):
     def delete(self):
         db.session.delete(self)
         db.session.commit()
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'title': self.title,
+            'body': self.body,
+            'dateCreated': self.date_created,
+            'userId': self.user_id,
+            'author': self.author.to_dict()
+        }
