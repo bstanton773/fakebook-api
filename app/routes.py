@@ -1,8 +1,7 @@
 from flask import request
-from datetime import datetime
 from app import app, db
 from app.models import Post, User
-from fake_data import post_data
+from app.auth import basic_auth, token_auth
 
 @app.route('/')
 def index():
@@ -26,6 +25,7 @@ def get_post(post_id):
 
 # Create New Post
 @app.route('/posts', methods=['POST'])
+@token_auth.login_required
 def create_post():
     # Check to see that the request body is JSON
     if not request.is_json:
@@ -45,8 +45,11 @@ def create_post():
     title = data.get('title')
     body = data.get('body')
 
+    # Get the logged in user
+    user = token_auth.current_user()
+
     # Create a new post
-    new_post = Post(title=title, body=body, user_id=1)
+    new_post = Post(title=title, body=body, user_id=user.id)
     return new_post.to_dict(), 201
 
 # Create new user
@@ -83,3 +86,14 @@ def create_user():
     # Create a new user
     new_user = User(first_name=first_name, last_name=last_name, username=username, email=email, password=password)
     return new_user.to_dict(), 201
+
+# Token Authentication
+@app.route('/token')
+@basic_auth.login_required
+def get_token():
+    user = basic_auth.current_user()
+    token = user.get_token()
+    return {
+        'token': token,
+        'tokenExpiration': user.token_expiration
+    }

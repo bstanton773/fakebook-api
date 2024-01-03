@@ -1,5 +1,7 @@
+import os
+import base64
 from app import db
-from datetime import datetime
+from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 
 class User(db.Model):
@@ -11,6 +13,8 @@ class User(db.Model):
     password = db.Column(db.String, nullable=False)
     date_created = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     posts = db.relationship('Post', backref='author')
+    token = db.Column(db.String(32), index=True, unique=True)
+    token_expiration = db.Column(db.DateTime)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -42,6 +46,15 @@ class User(db.Model):
             'email': self.email,
             'username': self.username,
         }
+    
+    def get_token(self):
+        now = datetime.utcnow()
+        if self.token and self.token_expiration > now + timedelta(minutes=1):
+            return self.token
+        self.token = base64.b64encode(os.urandom(24)).decode('utf-8')
+        self.token_expiration = now + timedelta(hours=1)
+        db.session.commit()
+        return self.token
 
 
 class Post(db.Model):
