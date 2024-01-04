@@ -1,5 +1,6 @@
 import os
 import base64
+import re
 from app import db
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -26,6 +27,21 @@ class User(db.Model):
     def save(self):
         db.session.add(self)
         db.session.commit()
+
+    def update(self, **kwargs):
+
+        def camel_to_snake(camel_string):
+            return re.sub('([A-Z][A-Za-z]*)', '_\1', camel_string).lower()
+        
+        for key, value in kwargs.items():
+            snake_key = camel_to_snake(key)
+            if hasattr(self, snake_key):
+                if snake_key == 'password':
+                    self.set_password(value)
+                else:
+                    setattr(self, snake_key, value)
+        
+        self.save()
 
     def delete(self):
         db.session.delete(self)
