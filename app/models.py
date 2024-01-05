@@ -118,7 +118,8 @@ class Post(db.Model):
             'body': self.body,
             'dateCreated': self.date_created,
             'userId': self.user_id,
-            'author': self.author.to_dict()
+            'author': self.author.to_dict(),
+            'comments': [comment.to_dict() for comment in self.comments]
         }
 
 
