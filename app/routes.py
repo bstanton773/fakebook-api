@@ -222,3 +222,26 @@ def create_comment(post_id):
     current_user = token_auth.current_user()
     new_comment = Comment(body=body, user_id=current_user.id, post_id=post.id)
     return new_comment.to_dict(), 201
+
+# Delete a comment
+@app.route('/posts/<int:post_id>/comments/<int:comment_id>', methods=['DELETE'])
+@token_auth.login_required
+def delete_comment(post_id, comment_id):
+    # Get the post based on the post id
+    post = db.session.get(Post, post_id)
+    # Check if the post exists
+    if post is None:
+        return {'error': f'Post with {post_id} does not exist'}, 404
+    # Get the comment based on the comment id
+    comment = db.session.get(Comment, comment_id)
+    # Check if the comment exists
+    if comment is None:
+        return {'error': f'Comment with {comment_id} does not exist'}, 404
+    # Get the logged in user based on the token
+    current_user = token_auth.current_user()
+    # Check if the comment is the logged in user's
+    if comment.user is not current_user:
+        return {'error': 'You do not have permission to delete this comment'}, 403
+    # Delete the post
+    comment.delete()
+    return {'success': "Comment has been deleted"}
