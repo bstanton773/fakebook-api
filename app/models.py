@@ -16,6 +16,7 @@ class User(db.Model):
     posts = db.relationship('Post', backref='author')
     token = db.Column(db.String(32), index=True, unique=True)
     token_expiration = db.Column(db.DateTime)
+    comments = db.relationship('Comment', backref='user')
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -80,6 +81,7 @@ class Post(db.Model):
     body = db.Column(db.String, nullable=False)
     date_created = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    comments = db.relationship('Comment', backref='post')
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -118,3 +120,26 @@ class Post(db.Model):
             'userId': self.user_id,
             'author': self.author.to_dict()
         }
+
+
+class Comment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.String, nullable=False)
+    date_created = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.save()
+
+    def __repr__(self):
+        return f"<Comment {self.id}>"
+    
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
