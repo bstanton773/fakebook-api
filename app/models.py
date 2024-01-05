@@ -143,3 +143,12 @@ class Comment(db.Model):
     def delete(self):
         db.session.delete(self)
         db.session.commit()
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'body': self.body,
+            'dateCreated': self.date_created,
+            'post_id': self.post_id,
+            'user': self.user.to_dict()
+        }
