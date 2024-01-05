@@ -86,6 +86,23 @@ def edit_user(user_id):
     user.update(**data)
     return user.to_dict()
 
+@app.route('/users/<int:user_id>', methods=['DELETE'])
+@token_auth.login_required
+def delete_user(user_id):
+    # Get the user based on the user id
+    user = db.session.get(User, user_id)
+    # Check if the user exists
+    if user is None:
+        return {'error': f'User with {user_id} does not exist'}, 404
+    # Get the logged in user based on the token
+    current_user = token_auth.current_user()
+    # Check if the user to edit is the logged in user
+    if user is not current_user:
+        return {'error': 'You do not have permission to delete this user'}, 403
+    # Delete the user
+    user.delete()
+    return {'success': f"{user.username} has been deleted"}
+
 
 # POST ENDPOINTS
 
@@ -133,3 +150,43 @@ def create_post():
     # Create a new post
     new_post = Post(title=title, body=body, user_id=user.id)
     return new_post.to_dict(), 201
+
+# Edit a Post
+@app.route('/posts/<int:post_id>', methods=['PUT'])
+@token_auth.login_required
+def edit_post(post_id):
+    # Check to see that the request body is JSON
+    if not request.is_json:
+        return {'error': 'Your content-type must be application/json'}, 400
+    # Get the post based on the post id
+    post = db.session.get(Post, post_id)
+    # Check if the post exists
+    if post is None:
+        return {'error': f'Post with {post_id} does not exist'}, 404
+    # Get the logged in post based on the token
+    current_user = token_auth.current_user()
+    # Check if the post to edit is the logged in post
+    if post.author is not current_user:
+        return {'error': 'You do not have permission to edit this post'}, 403
+    
+    data = request.json
+    post.update(**data)
+    return post.to_dict()
+
+# Delete a Post
+@app.route('/posts/<int:post_id>', methods=['DELETE'])
+@token_auth.login_required
+def delete_post(post_id):
+    # Get the post based on the post id
+    post = db.session.get(Post, post_id)
+    # Check if the post exists
+    if post is None:
+        return {'error': f'Post with {post_id} does not exist'}, 404
+    # Get the logged in post based on the token
+    current_user = token_auth.current_user()
+    # Check if the post to edit is the logged in post
+    if post.author is not current_user:
+        return {'error': 'You do not have permission to delete this post'}, 403
+    # Delete the post
+    post.delete()
+    return {'success': f"{post.title} has been deleted"}
