@@ -16,6 +16,7 @@ class User(db.Model):
     posts = db.relationship('Post', backref='author')
     token = db.Column(db.String(32), index=True, unique=True)
     token_expiration = db.Column(db.DateTime)
+    comments = db.relationship('Comment', backref='user')
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -29,13 +30,14 @@ class User(db.Model):
         db.session.commit()
 
     def update(self, **kwargs):
+        allowed_fields = {'first_name', 'last_name', 'email', 'username', 'password'}
 
         def camel_to_snake(camel_string):
             return re.sub('([A-Z][A-Za-z]*)', '_\1', camel_string).lower()
         
         for key, value in kwargs.items():
             snake_key = camel_to_snake(key)
-            if hasattr(self, snake_key):
+            if snake_key in allowed_fields:
                 if snake_key == 'password':
                     self.set_password(value)
                 else:
@@ -79,6 +81,7 @@ class Post(db.Model):
     body = db.Column(db.String, nullable=False)
     date_created = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    comments = db.relationship('Comment', backref='post')
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -91,6 +94,19 @@ class Post(db.Model):
         db.session.add(self)
         db.session.commit()
 
+    def update(self, **kwargs):
+        allowed_fields = {'title', 'body'}
+
+        def camel_to_snake(camel_string):
+            return re.sub('([A-Z][A-Za-z]*)', '_\1', camel_string).lower()
+
+        for key, value in kwargs.items():
+            snake_key = camel_to_snake(key)
+            if snake_key in allowed_fields:
+                setattr(self, snake_key, value)
+
+        self.save()
+
     def delete(self):
         db.session.delete(self)
         db.session.commit()
@@ -102,5 +118,38 @@ class Post(db.Model):
             'body': self.body,
             'dateCreated': self.date_created,
             'userId': self.user_id,
-            'author': self.author.to_dict()
+            'author': self.author.to_dict(),
+            'comments': [comment.to_dict() for comment in self.comments]
+        }
+
+
+class Comment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.String, nullable=False)
+    date_created = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.save()
+
+    def __repr__(self):
+        return f"<Comment {self.id}>"
+    
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'body': self.body,
+            'dateCreated': self.date_created,
+            'post_id': self.post_id,
+            'user': self.user.to_dict()
         }
